@@ -123,6 +123,12 @@ payment_methods: {
     }
   }
 
+  
+if (req.method === "POST" && pathname === "/webhook") {
+  console.log("Notificação recebida do Mercado Pago");
+  return responder(res, 200, { recebido: true });
+}
+
   return responder(res, 404, {
     erro: "Rota não encontrada"
   });
