@@ -8,4 +8,71 @@ function remove(id){if(cart[id]){cart[id]--;if(!cart[id])delete cart[id]}renderC
 function clearCart(){Object.keys(cart).forEach(k=>delete cart[k]);renderCart()}
 function renderCart(){const items=motos.filter(m=>cart[m.id]);document.getElementById('cart').innerHTML=items.length?items.map(m=>`<div class="line"><span>${esc(m.nome)} × ${cart[m.id]}<br><small>${brl(m.preco*cart[m.id])}</small></span><button class="secondary" onclick="remove(${m.id})">−</button></div>`).join(''):'Seu carrinho está vazio.';document.getElementById('total').textContent='Total: '+brl(items.reduce((s,m)=>s+m.preco*cart[m.id],0))}
 function checkout(){const items=motos.filter(m=>cart[m.id]);const name=document.getElementById('name').value.trim(),phone=document.getElementById('phone').value.trim(),city=document.getElementById('city').value.trim(),payment=document.getElementById('payment').value;if(!items.length)return alert('Adicione uma moto ao carrinho.');if(!name||!phone||!city)return alert('Preencha nome, telefone e bairro/cidade.');const total=items.reduce((s,m)=>s+m.preco*cart[m.id],0);const msg=['Olá, Conect Motos! Quero solicitar um pedido:',...items.map(m=>`${m.nome} - ${cart[m.id]} un. - ${brl(m.preco*cart[m.id])}`),`Total estimado: ${brl(total)}`,`Nome: ${name}`,`Telefone: ${phone}`,`Região: ${city}`,`Pagamento: ${payment}`,'Aguardo confirmação de disponibilidade, frete e condições.'].join('\n');window.open('https://wa.me/5594991651578?text='+encodeURIComponent(msg),'_blank','noopener,noreferrer')}
-render();</script></body></html>
+
+render();
+</script>
+
+<script>
+async function testarMercadoPago() {
+  const botao = document.getElementById("teste-mp");
+  botao.disabled = true;
+  botao.textContent = "Gerando pagamento...";
+
+  try {
+    const resposta = await fetch(
+      "https://conect-motos-api.onrender.com/criar-pagamento",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          modelo: "bot-m400"
+        })
+      }
+    );
+
+    const dados = await resposta.json();
+
+    if (!resposta.ok) {
+      throw new Error(dados.erro || "Erro no pagamento");
+    }
+
+    const link = dados.link_teste || dados.link;
+
+    if (!link) {
+      throw new Error("Nenhum link de pagamento retornado");
+    }
+
+    const resultado = document.getElementById("resultado-mp");
+    resultado.textContent = "";
+
+    const a = document.createElement("a");
+    a.href = link;
+    a.target = "_blank";
+    a.rel = "noopener noreferrer";
+    a.textContent = "Abrir pagamento de teste";
+    resultado.appendChild(a);
+
+  } catch (erro) {
+    document.getElementById("resultado-mp")
+      .textContent = "Erro: " + erro.message;
+  } finally {
+    botao.disabled = false;
+    botao.textContent = "Testar Mercado Pago";
+  }
+}
+</script>
+
+<div style="padding:20px;text-align:center">
+  <h3>Teste Mercado Pago - Bot M400</h3>
+  <p>Valor: R$ 4.500,00</p>
+  <button id="teste-mp" onclick="testarMercadoPago()">
+    Testar Mercado Pago
+  </button>
+  <p id="resultado-mp"></p>
+</div>
+
+</body>
+</html>
+
