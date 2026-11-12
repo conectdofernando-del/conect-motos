@@ -1,6 +1,6 @@
 
 const http = require("node:http");
-
+const crypto = require("node:crypto");
 const PORT = process.env.PORT || 3000;
 const TOKEN = process.env.MERCADO_PAGO_ACCESS_TOKEN;
 
@@ -124,10 +124,73 @@ payment_methods: {
   }
 
   
+
 if (req.method === "POST" && pathname === "/webhook") {
-  console.log("Notificação recebida do Mercado Pago");
-  return responder(res, 200, { recebido: true });
+  const secret = process.env.MERCADO_PAGO_WEBHOOK_SECRET;
+  const signature = req.headers["x-signature"];
+  const requestId = req.headers["x-request-id"];
+  const paymentId = new URL(
+    req.url,
+    "https://conect-motos-api.onrender.com"
+  ).searchParams.get("data.id");
+
+  if (!secret || !signature || !requestId || !paymentId) {
+    return responder(res, 400, { erro: "Notificação inválida" });
+  }
+
+  const ts = signature.match(/(?:^|,)ts=([^,]+)/)?.[1]?.trim();
+  const v1 = signature.match(/(?:^|,)v1=([^,]+)/)?.[1]?.trim();
+
+  if (!ts || !v1 || !/^\d+$/.test(ts) ||
+      !/^[a-f0-9]{64}$/i.test(v1)) {
+    return responder(res, 401, { erro: "Assinatura inválida" });
+  }
+
+  const timestamp = Number(ts);
+  if (!Number.isSafeInteger(timestamp) ||
+      Math.abs(Date.now() - timestamp * 1000) > 300000) {
+    return responder(res, 401, { erro: "Notificação expirada" });
+  }
+
+  const manifest =
+    `id:${paymentId.toLowerCase()};request-id:${requestId};ts:${ts};`;
+
+  const expected = crypto
+    .createHmac("sha256", secret)
+    .update(manifest)
+    .digest("hex");
+
+  if (!crypto.timingSafeEqual(
+    Buffer.from(expected, "hex"),
+    Buffer.from(v1, "hex")
+  )) {
+    return responder(res, 401, { erro: "Assinatura inválida" });
+  }
+
+  try {
+    const respostaPagamento = await fetch(
+      `https://api.mercadopago.com/v1/payments/${encodeURIComponent(paymentId)}`,
+      { headers: { Authorization: `Bearer ${TOKEN}` } }
+    );
+
+    if (!respostaPagamento.ok) {
+      return responder(res, 502, { erro: "Falha na consulta do pagamento" });
+    }
+
+    const pagamento = await respostaPagamento.json();
+
+    console.log("Pagamento consultado:", {
+      id: pagamento.id,
+      status: pagamento.status
+    });
+
+    return responder(res, 200, { recebido: true });
+  } catch (erro) {
+    console.error("Erro ao consultar pagamento:", erro.message);
+    return responder(res, 500, { erro: "Falha no processamento" });
+  }
 }
+
 
   return responder(res, 404, {
     erro: "Rota não encontrada"
