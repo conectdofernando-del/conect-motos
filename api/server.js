@@ -92,11 +92,12 @@ const server = http.createServer(async (req, res) => {
             }],
             external_reference: require("node:crypto")
   .randomUUID(),
+
 payment_methods: {
-  installments: 18
+  installments: 10
 }
-              .randomUUID()
-          })
+})
+
         }
       );
 
