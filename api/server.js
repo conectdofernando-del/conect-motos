@@ -4,9 +4,10 @@ const http = require("node:http");
 const PORT = process.env.PORT || 3000;
 
 const server = http.createServer((req, res) => {
+  const pathname = new URL(req.url, "http://localhost").pathname;
   res.setHeader("Content-Type", "application/json; charset=utf-8");
 
-  if (req.method === "GET" && req.url === "/") {
+  if (req.method === "GET" && pathname === "/") {
     res.writeHead(200);
     return res.end(JSON.stringify({
       aplicativo: "Conect Motos",
@@ -15,7 +16,7 @@ const server = http.createServer((req, res) => {
     }));
   }
 
-  if (req.method === "GET" && req.url === "/health") {
+  if (req.method === "GET" && pathname === "/health") {
     res.writeHead(200);
     return res.end(JSON.stringify({ status: "ok" }));
   }
