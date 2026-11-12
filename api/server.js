@@ -91,6 +91,10 @@ const server = http.createServer(async (req, res) => {
               unit_price: moto.preco
             }],
             external_reference: require("node:crypto")
+  .randomUUID(),
+payment_methods: {
+  installments: 18
+}
               .randomUUID()
           })
         }
