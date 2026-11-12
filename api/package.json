@@ -1,0 +1,14 @@
+
+{
+  "name": "conect-motos-api",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Servidor de pagamentos da Conect Motos",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
